@@ -36,7 +36,7 @@ def user_data_dir(file_name: str) -> Path:
     elif platform.startswith("darwin"):
         os_path = "~/Library/Application Support"
     else:
-        os_path = os.getenv("XDG_DATA_HOME", "~/.local/share")
+        os_path = os.getenv('XDG_DATA_HOME') or f'{os.getenv("HOME")}/.local/share'
     path = Path(os_path) / "intry"
     if not os.path.exists(path):
         os.mkdir(path)
