@@ -59,7 +59,7 @@ def _main_loop():
         nonlocal y, iny
         if x == 0:
             y = val(y)
-            y = len(fs)-1 if y is max_ else y % len(fs)
+            y = len(fs)-1 if y is max_ else max(0, min(len(fs)-1, y))
         elif x == 1:
             l.y = val(l.y)
         else:
