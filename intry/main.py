@@ -4,6 +4,7 @@ import re
 import termios
 import traceback
 from argparse import ArgumentParser
+from more_itertools import intersperse
 from itertools import chain, repeat, islice
 from pathlib import Path
 from sys import stdin
@@ -23,6 +24,8 @@ _args = _ap.parse_args()
 
 
 # =================================
+
+_ttoken = Tuple[str, str] | None
 
 
 def _main_loop():
@@ -133,18 +136,16 @@ def _main_loop():
     # =================================
 
     syntax = re.compile(
-        r'(//.+)|(\b\d+\b|\b0x[a-fA-F0-9]+\b)|((?:\b(?:DEFINE|FOR|TO|to|DO WHILE|OD|CASE|IF|ELSE|FI|ENDFOR|CASE|OF|ESAC|RETURN)\b *)+)|([- !&=~<>+*?:[\](){},]+|\/|\bOR\b|\bAND\b|\bXOR\b)|(\n)', flags=re.MULTILINE)
+        r'(//.+)|(\b\d+\b|\b0x[a-fA-F0-9]+\b)|(\b(?:DEFINE|FOR|TO|to|DO WHILE|OD|CASE|IF|ELSE|FI|ENDFOR|CASE|OF|ESAC|RETURN)\b)|(:=|[- !&=~<>+*?:[\](){},/]|\bOR\b|\bAND\b|\bXOR\b)|(\n)', flags=re.MULTILINE)
 
-    ttoken = Tuple[str, str] | None
-
-    def tokenize(s: str, w: int) -> Generator[ttoken, None, None]:
+    def tokenize(s: str, w: int) -> Generator[_ttoken, None, None]:
         i = 0
         for it in syntax.finditer(s):
             a, b = it.span()
             if i < a:
-                yield s[i:a], '\033[39m'
+                yield from ((x, '\033[39m') for x in intersperse(' ', s[i:a].split(' ')))
             if it[1]:
-                yield s[a:b], '\033[38;5;2m'
+                yield from ((x, '\033[38;5;2m') for x in intersperse(' ', s[a:b].split(' ')))
             elif it[2]:
                 yield s[a:b], '\033[38;5;12m'
             elif it[3]:
@@ -157,32 +158,37 @@ def _main_loop():
         if i != len(s):
             yield s[i:], '\033[39m'
 
-    def parse(tokens: Iterable[ttoken], w: int) -> Generator[str, None, None]:
+    def parse(tokens: Iterable[_ttoken], w: int) -> Generator[str, None, None]:
         l, n = '', 0
+        c: str | None = None
         for t_ in tokens:
             if t_ is None:
                 yield l + ' ' * (w - n)
-                l, n = '', 0
+                l, n = c, 0
                 continue
-            t, c = t_
-            n += len(t)
+            t, c_ = t_
+            c, c_ = c_, c_ * (c_ != c)
+            n, n0 = n+len(t), n
             if n > w:
-                off = w-n
-                yield f'{l}{c}{t[:off]}\033[39m'
-                l, n = f'{c}{t[off:]}', len(t[off:])
-            else:
-                l = f'{l}{c}{t}'
+                trs = t.rstrip(' ')
+                if n0 + len(trs) != w:
+                    yield l + ' ' * (w - n0)
+                    t = t.lstrip(' ')
+                    l, n = f'{c}{t}', len(t)
+                    continue
+                t = trs
+            l = f'{l}{c_}{t}'
         if l:
             yield l + ' ' * (w - n)
 
-    def sig(in_: intrin) -> Generator[ttoken, None, None]:
+    def sig(in_: intrin) -> Generator[_ttoken, None, None]:
         yield in_.ret, '\033[38;5;4m'
         yield ' ' + in_.name, '\033[39m'
         yield '(', '\033[38;5;8m'
         for i, (t, n) in enumerate(in_.params):
             if i:
                 yield ', ', '\033[38;5;8m'
-            yield t + ' ', '\033[38;5;4m'
+            yield from ((f'{x} ', '\033[38;5;4m') for x in t.split())
             yield n, '\033[38;5;14m'
         yield ')', '\033[38;5;8m'
 
@@ -196,7 +202,7 @@ def _main_loop():
         yield from parse(sig(in_), w)
         if in_.descr:
             for ln in in_.descr.replace('\t', '  ').splitlines():
-                yield from c(ln, '\033[39m')
+                yield from parse(((x, '\033[39m') for x in intersperse(' ', ln.split(' '))), w)
         if in_.perf:
             yield from c(f'╔{"":═>{dat.wpkey}}╤{"Cl":═^{dat.wlkey}}╤{"CPI":═^{dat.wtkey}}╗')
             for k, (l, t) in in_.perf.items():
