@@ -17,7 +17,7 @@ def print_(s: str, end: str = '\r\n'):
 
 def gets(n: int, sz: Tuple[int, int]) -> Tuple[str | None, int, int]:
     while True:
-        r, _w, _e = select([stdin.buffer.raw], [], [], .05)
+        r, _w, _e = select([stdin.buffer.raw], [], [], .1)
         if r:
             return stdin.buffer.raw.read(n), *sz
         sz2 = os.get_terminal_size()

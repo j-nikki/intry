@@ -1,5 +1,4 @@
 from curses.ascii import isprint
-import fcntl
 import os
 import re
 import termios
@@ -190,7 +189,7 @@ def _main_loop():
     def infos_impl(in_: intrin, w: int):
         def c(x, pre: str = ''):
             return () if x is None else (pre + ''.join(y) for y in chunk(x, w, ' '))
-        yield from c((in_.tech or "?") + " / " + (in_.cat or "?"), techc(in_.tech))
+        yield from c((in_.tech or "?") + " > " + (in_.cat or "?"), techc(in_.tech))
         if in_.header:
             yield from c(f'#include <{in_.header}>')
         yield from c(in_.instr)
@@ -293,7 +292,6 @@ def main():
     print_('\033[?25l\033[s\033[?1049h', end='')
     exc: None | str = None
     fd = stdin.fileno()
-    old_flags = fcntl.fcntl(fd, fcntl.F_GETFL)
     old = termios.tcgetattr(fd)
     new = termios.tcgetattr(fd)
     new[3] = new[3] & ~termios.ECHO
@@ -304,7 +302,6 @@ def main():
     except Exception:
         exc = traceback.format_exc()
     finally:
-        fcntl.fcntl(fd, fcntl.F_SETFL, old_flags)
         termios.tcsetattr(fd, termios.TCSADRAIN, old)
         print_('\033[?1049l\033[u\033[?25h', end='')
         if exc:
