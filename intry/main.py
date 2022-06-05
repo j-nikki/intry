@@ -1,3 +1,4 @@
+from contextlib import suppress
 from curses.ascii import isprint
 import os
 import re
@@ -10,12 +11,13 @@ from pathlib import Path
 from sys import stdin
 from tty import setraw
 from typing import Dict, Iterable, Generator, List, Tuple
+from pyperclip import copy
 
 from .utils import *
 from .data import *
 from .intrin import *
 from .listing import *
-
+from .tags import *
 
 _ap = ArgumentParser()
 _ap.add_argument('ises', type=str, nargs='*', metavar='ISEs')
@@ -34,7 +36,7 @@ def _main_loop():
     fs = list(dat.keys())
     wfilts = max(map(len, fs))
     wret = max(len(in_.ret) for in_ in chain.from_iterable(dat.values()))
-    fsel, y, sin = get_ses()
+    fsel, y, sin, ts = get_ses()
     if _args.ises:
         fsel = {fs.index(x) for x in map(str.upper, _args.ises) if x in fs}
         if len(fsel) != len(_args.ises):
@@ -74,8 +76,13 @@ def _main_loop():
     def qry_(val):
         l.qry = val
 
+    def tag(i):
+        with suppress(IndexError):
+            l.cur = ts[i]
+
     mots = {
-        b'q': lambda: dump_ses((fsel, y, l.cur and l.cur.name)) or exit(0),
+        b'q': lambda: dump_ses((fsel, y, l.cur and l.cur.name, ts)) or exit(0),
+        b'Q': lambda: exit(0),
         b'j': lambda: y_(lambda y: y + 1),
         b'k': lambda: y_(lambda y: y - 1),
         b'd': lambda: y_(lambda y: y + 5),
@@ -86,7 +93,10 @@ def _main_loop():
         b'l': lambda: x_((x + 1) % 3),
         b' ': lambda: x == 0 and sel(y),
         b'/': lambda: qry_(''),
-    }
+        b'y': lambda: l.cur and copy(l.cur.name),
+        b't': lambda: l.cur and ts.push(l.cur.name),
+        b'x': lambda: l.cur and ts.pop(l.cur.name),
+    } | {str(i_).encode(): (lambda i: (lambda: tag(i)))(i_) for i_ in range(1, 10)}
 
     # =================================
 
@@ -226,7 +236,7 @@ def _main_loop():
 
     def intrs(w, h):
         for i, in_ in islice(enumerate(l.lst), window(len(l.lst), l.y+2, h), None):
-            res = f'\033[38;5;4m{(in_.ret or "void").rjust(wret)} \033[39m{in_.name}\033[38;5;8m(' + \
+            res = f'\033[38;5;4m{(in_.ret or "void").rjust(wret)}\033[39m{ts.str_(in_.name)}{in_.name}\033[38;5;8m(' + \
                 "\033[38;5;8m, ".join(f'\033[38;5;4m{f"{t} "}\033[38;5;14m{n}' for t,
                                       n in in_.params) + '\033[38;5;8m)'
             nfx = nty + nname + \
@@ -296,7 +306,7 @@ def _main_loop():
 
 def main():
     print_('\033[?25l\033[s\033[?1049h', end='')
-    exc: None | str = None
+    # exc: None | str = None
     fd = stdin.fileno()
     old = termios.tcgetattr(fd)
     new = termios.tcgetattr(fd)
@@ -305,14 +315,14 @@ def main():
         termios.tcsetattr(fd, termios.TCSADRAIN, new)
         setraw(fd)
         _main_loop()
-    except Exception:
-        exc = traceback.format_exc()
+    # except Exception:
+    #     exc = traceback.format_exc()
     finally:
         termios.tcsetattr(fd, termios.TCSADRAIN, old)
         print_('\033[?1049l\033[u\033[?25h', end='')
-        if exc:
-            print_(f"The program ran into an exception\n{exc.strip()}".replace(
-                '\n', '\r\n'))
+        # if exc:
+        #     print_(f"The program ran into an exception\n{exc.strip()}".replace(
+        #         '\n', '\r\n'))
 
 
 if __name__ == '__main__':

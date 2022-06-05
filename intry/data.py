@@ -12,6 +12,7 @@ import xml.etree.ElementTree as et
 
 from .utils import *
 from .intrin import *
+from .tags import *
 
 
 class data:
@@ -38,8 +39,8 @@ class data:
         self._wtkey = wt
 
 
-_tses = Tuple[Set[int], int | None, str | None]
-_vdata, _vses = 0, 0
+_tses = Tuple[Set[int], int | None, str | None, tags]
+_vdata, _vses = 0, 1
 
 
 def get_data_src(data_source: Path) -> Tuple[str, str, str]:
@@ -114,7 +115,7 @@ def get_ses() -> _tses:
             ver, ses = pickle.load(f)
             if ver == _vses:
                 return ses
-    return set(), None, None
+    return set(), None, None, tags()
 
 
 def dump_ses(ses: _tses):
