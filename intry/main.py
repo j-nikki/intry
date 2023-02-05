@@ -59,13 +59,14 @@ def _main_loop():
         nonlocal x
         x = min(2, max(0, val))
 
-    def y_(val):
+    def y_(val: Callable[[int], int]):
         nonlocal y, iny
         if x == 0:
             y = val(y)
             y = len(fs)-1 if y is max_ else max(0, min(len(fs)-1, y))
         elif x == 1:
-            l.y = val(l.y)
+            y_ = val(l.y)
+            l.y = len(l.lst)-1 if y_ is max_ else max(0, min(len(l.lst)-1, y_))
         else:
             iny = val(iny)
 
@@ -96,6 +97,7 @@ def _main_loop():
         b'y': lambda: l.cur and copy(l.cur.name),
         b't': lambda: l.cur and ts.push(l.cur.name),
         b'x': lambda: l.cur and ts.pop(l.cur.name),
+        b'\t': lambda: ts and (tag(2) if l.cur and l.cur.name == ts[1] else tag(1))
     } | {str(i_).encode(): (lambda i: (lambda: tag(i)))(i_) for i_ in range(1, 10)}
 
     # =================================
@@ -125,12 +127,14 @@ def _main_loop():
     cols = {
         "MMX": "3",
         "SSE": "2",
+        "SSE_ALL": "2",
         "SSE2": "10",
         "SSE3": "10",
         "SSSE3": "4",
         "SSE4.1": "12",
         "SSE4.2": "14",
         "AVX": "5",
+        "AVX_ALL": "5",
         "AVX2": "13",
         "FMA": "1",
         "AVX_VNNI": "9",

@@ -7,6 +7,9 @@ _stags = ' ¹²³⁴⁵⁶⁷⁸⁹'
 
 
 class tags:
+    def __bool__(self) -> bool:
+        return bool(self._tags)
+
     def __getitem__(self, idx: int) -> str:
         return self._tags[len(self._tags) - idx]
 

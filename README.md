@@ -26,7 +26,7 @@ Tested on Artix Linux with Python 3.10.4.
 <tr><td><code>x</code></td><td>pop tag</td></tr>
 <tr><td><code>[1..9]</code></td><td>go to tag</td></tr>
 <!-- TODO: <tr><td><code>:</code></td><td>search tags</td></tr> -->
-<!-- <tr><td><code>&lt;TAB&gt;</code></td><td>go to tag 1/2</td></tr> -->
+<tr><td><code>&lt;TAB&gt;</code></td><td>go to previous item</td></tr>
 <tr><td><code>q</code></td><td>quit</td></tr>
 <tr><td><code>Q</code></td><td>amnesic quit</td></tr>
 </table>

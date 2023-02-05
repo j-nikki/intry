@@ -56,9 +56,9 @@ def get_data_src(data_source: Path) -> Tuple[str, str, str]:
         def rd(x):
             return f.read(next(y for y in f.filelist if Path(y.filename).name == x)).strip()
         return rd('data.js').lstrip(b'var data_js = "').rstrip(b'";').decode('unicode_escape'), \
-            eval(rd('perf.js').decode('U8').lstrip('perf_js =')), \
             eval(re.sub(r'([,{])(\w+):', r'\1"\2":',
                  rd('perf2.js').decode('U8').lstrip('perf2_js =')))
+            # eval(rd('perf.js').decode('U8').lstrip('perf_js =')), \
 
 
 def get_data(data_source: Path) -> data:
@@ -69,10 +69,12 @@ def get_data(data_source: Path) -> data:
             if ver == _vdata:
                 return dat
     dat: Dict[str, List[intrin]] = defaultdict(list)
-    xml, p_, p2 = get_data_src(data_source)
+    xml, p2 = get_data_src(data_source)
+    # xml, p_, p2 = get_data_src(data_source)
     print_('reading dat...')
-    p = {k: reduce(dict.__or__, chain.from_iterable(v.values()))
-         for k, v in chain.from_iterable(map(dict.items, p_.values()))}
+    p = {}
+    # p = {k: reduce(dict.__or__, chain.from_iterable(v.values()))
+        #  for k, v in chain.from_iterable(map(dict.items, p_.values()))}
     for k, v in p2.items():
         p.setdefault(k.split('_')[0], {}).update(reduce(dict.__or__, v))
     ws = [0, len('Cl'), len('CPI')]
