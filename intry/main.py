@@ -108,11 +108,10 @@ def _main_loop():
     def trim(x: str, w: int):
         # doesn't count escape seqs into len
         i = n = 0
-        gi = x.__getitem__
         while n < w:
-            if gi(i) == '\033':
+            if x[i] == '\033':
                 i += 1
-                while gi(i) != 'm':
+                while x[i] != 'm':
                     i += 1
                 i += 1
             else:
