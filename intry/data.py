@@ -1,3 +1,4 @@
+import json
 import pickle
 import re
 import xml.etree.ElementTree as et
@@ -68,9 +69,12 @@ def get_data(intel_source: Optional[str], amd_source: Optional[str]) -> data:
     dat: Dict[str, List[intrin]] = defaultdict(list)
     fs = _fetch_data(intel_source or 'https://cdrdv2.intel.com/v1/dl/getContent/671338',
                       'Intel Intrinsics Guide/files/data.js',
-                      'Intel Intrinsics Guide/files/perf2.js')
+                      'Intel Intrinsics Guide/files/perf2.js',
+                      'Intel Intrinsics Guide/files/notes.json')
     xml = fs[0].lstrip(b'var data_js = "').strip().rstrip(b'";').decode('unicode_escape')
     p2 = eval(re.sub(r'([,{])(\w+):', r'\1"\2":', fs[1].decode('U8').lstrip('perf2_js =')))
+    notes = {n["note_name"]:re.sub(r'([\s])\1+',r'\1',re.sub(r'<[^<>]+?>','\n',n["note_value"])).strip() for n in json.loads(fs[2].decode('U8'))["notes"]}
+    pnote = re.compile(rf'^\s*\[({"|".join(notes.keys())})\]', flags=re.M)
     print_('reading dat...')
     p = {}
     # p = {k: reduce(dict.__or__, chain.from_iterable(v.values()))
@@ -96,7 +100,7 @@ def get_data(intel_source: Optional[str], amd_source: Optional[str]) -> data:
             i.attrib['tech'],
             orx(i.find('category')).text,
             (in_ or '').lower(),
-            orx(i.find('description')).text,
+            pnote.sub(lambda m: notes[m[1]], orx(i.find('description')).text),
             [(p.attrib['type'], p.attrib['varname'])
                 for p in i.findall('parameter') if p.attrib['type'] != 'void'],
             orx(i.find('return')).attrib['type'],
