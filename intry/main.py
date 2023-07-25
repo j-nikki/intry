@@ -21,7 +21,8 @@ from .tags import *
 
 _ap = ArgumentParser()
 _ap.add_argument('ises', type=str, nargs='*', metavar='ISEs')
-_ap.add_argument('--data-source', type=Path)
+_ap.add_argument('--intel-source', type=str)
+_ap.add_argument('--amd-source', type=str)
 _args = _ap.parse_args()
 
 
@@ -32,7 +33,7 @@ _ttoken = Tuple[str, str] | None
 
 def _main_loop():
     status: None | str = None
-    dat = get_data(_args.data_source)
+    dat = get_data(_args.intel_source, _args.amd_source)
     fs = list(dat.keys())
     wfilts = max(map(len, fs))
     wret = max(len(in_.ret) for in_ in chain.from_iterable(dat.values()))

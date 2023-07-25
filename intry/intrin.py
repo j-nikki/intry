@@ -48,7 +48,8 @@ class intrin:
         return self._op
 
     @property
-    def perf(self) -> dict:
+    def perf(self) -> dict[str, tuple[str, str]]:
+        '''mapping of microarchitecture to <latency, throughput> pair'''
         return self._perf
 
     def __lt__(self, other):
