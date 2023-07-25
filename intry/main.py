@@ -1,23 +1,22 @@
-from contextlib import suppress
-from curses.ascii import isprint
 import os
 import re
 import termios
-import traceback
 from argparse import ArgumentParser
-from more_itertools import intersperse
-from itertools import chain, repeat, islice
-from pathlib import Path
+from contextlib import suppress
+from curses.ascii import isprint
+from itertools import chain, islice, repeat
 from sys import stdin
 from tty import setraw
-from typing import Dict, Iterable, Generator, List, Tuple
+from typing import Callable, Dict, Generator, Iterable, List, Tuple
+
+from more_itertools import intersperse
 from pyperclip import copy
 
-from .utils import *
 from .data import *
 from .intrin import *
 from .listing import *
 from .tags import *
+from .utils import *
 
 _ap = ArgumentParser()
 _ap.add_argument('ises', type=str, nargs='*', metavar='ISEs')

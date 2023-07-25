@@ -1,5 +1,5 @@
-from itertools import zip_longest
 import os
+from itertools import zip_longest
 from pathlib import Path
 from select import select
 from sys import platform, stdin, stdout

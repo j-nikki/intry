@@ -1,10 +1,9 @@
+from bisect import bisect
 from contextlib import suppress
 from typing import Iterable, Pattern
-from bisect import bisect
 
-from .intrin import *
 from .data import *
-
+from .intrin import *
 
 _LF = '\n'
 

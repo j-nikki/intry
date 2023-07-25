@@ -1,7 +1,5 @@
 from contextlib import suppress
-from typing import Iterable, List, Callable
-
-from .intrin import intrin
+from typing import List
 
 _stags = ' ¹²³⁴⁵⁶⁷⁸⁹'
 

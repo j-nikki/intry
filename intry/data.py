@@ -6,7 +6,7 @@ from functools import reduce
 from io import BytesIO
 from itertools import groupby
 from statistics import fmean
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, Iterable, List, Optional, Set, Tuple
 from urllib.request import urlopen
 from zipfile import ZipFile
 
@@ -45,7 +45,7 @@ _tses = Tuple[Set[int], int | None, str | None, tags]
 _vdata, _vses = 0, 1
 
 
-def get_data_src(data_source: str, *files: str) -> list[bytes]:
+def _fetch_data(data_source: str, *files: str) -> list[bytes]:
     if os.path.isfile(data_source):
         print_(f'importing data from {data_source}...')
         src = data_source
@@ -66,7 +66,7 @@ def get_data(intel_source: Optional[str], amd_source: Optional[str]) -> data:
             if ver == _vdata:
                 return dat
     dat: Dict[str, List[intrin]] = defaultdict(list)
-    fs = get_data_src(intel_source or 'https://cdrdv2.intel.com/v1/dl/getContent/671338',
+    fs = _fetch_data(intel_source or 'https://cdrdv2.intel.com/v1/dl/getContent/671338',
                       'Intel Intrinsics Guide/files/data.js',
                       'Intel Intrinsics Guide/files/perf2.js')
     xml = fs[0].lstrip(b'var data_js = "').strip().rstrip(b'";').decode('unicode_escape')
@@ -107,15 +107,17 @@ def get_data(intel_source: Optional[str], amd_source: Optional[str]) -> data:
         dat[i.attrib['tech']].append(in_)
     dat = dict(sorted((k, sorted(v)) for k, v in dat.items()))
         
-    fs = get_data_src(amd_source or 'https://www.amd.com/system/files/TechDocs/57647.zip', 'Zen4_Instruction_Latencies_version_1-00.xlsx')
+    fs = _fetch_data(amd_source or 'https://www.amd.com/system/files/TechDocs/57647.zip',
+                      'Zen4_Instruction_Latencies_version_1-00.xlsx')
     wb = openpyxl.open(BytesIO(fs[0]), read_only=True)
     rs = iter(wb.get_sheet_by_name('Zen4 instruction latencies'))
     ii, il, it = map([c.value for c in next(rs)].index, ('Instruction', 'Latency', 'Throughput'))
+    prng = re.compile(r'([\d.]+)-([\d.]+)')
     def gavg(xs: Iterable[str | float | int]) -> float:
         def map_(x: str | float | int) -> float | None:
             with suppress(ValueError):
                 return float(x)
-            return (m := re.match(r'([\d.]+)-([\d.]+)', str(x))) and (float(m[1]) + float(m[2])) / 2
+            return (m := prng.match(str(x))) and (float(m[1]) + float(m[2])) / 2
         return fmean(xs) if (xs := list(filter(None, map(map_, xs)))) else 0
     newws = ws[1:]
     for k, g in groupby(rs, lambda r: r[ii].value.lower()):
