@@ -93,7 +93,7 @@ def _main_loop():
         b'h': lambda: x_((x - 1) % 3),
         b'l': lambda: x_((x + 1) % 3),
         b' ': lambda: x == 0 and sel(y),
-        b'/': lambda: qry_(''),
+        b'/': lambda: qry_(l.qry_re.pattern if l.qry_re is not None else ''),
         b'y': lambda: l.cur and copy(l.cur.name),
         b't': lambda: l.cur and ts.push(l.cur.name),
         b'x': lambda: l.cur and ts.pop(l.cur.name),

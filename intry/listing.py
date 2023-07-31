@@ -76,6 +76,10 @@ class listing:
         except:
             self._qr = None
         self._runq()
+        
+    @property
+    def qry_re(self) -> re.Pattern | None:
+        return self._qr
 
     def submit_query(self):
         self._q = None
