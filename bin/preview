@@ -1,0 +1,72 @@
+#!/bin/env zsh
+
+DATADIR=${XDG_DATA_HOME:-~/.local/share}/intry
+DB="$DATADIR/db"
+WS="$DATADIR/ws"
+
+IDXNAME=1
+IDXTECH=2
+IDXCAT=3
+IDXINSTR=4
+IDXDESCR=5
+IDXRET=6
+IDXHEADER=7
+IDXPARAMS=8
+IDXPERF=9
+IDXOP=10
+
+res=$(
+sqlite3 "$DB" <<EOF
+.separator ä
+SELECT
+    i.name,
+    i.tech,
+    i.cat,
+    i.instr,
+    i.descr,
+    i.ret,
+    i.header,
+    (SELECT group_concat(p.type || ' ' || p.name, ', ') FROM param p WHERE intrin_id = i.id ORDER BY number ASC),
+    (SELECT group_concat(p.arch || '$' || p.latency || '$' || p.throughput) FROM perf p WHERE intrin_id = i.id),
+    i.op
+FROM intrin i
+WHERE name='$1'
+EOF
+)
+res=("${(@s:ä:)res}")
+
+SYNTAX="$(bat --config-dir)/syntaxes/ipseudo/ipseudo.sublime-syntax"
+if [[ ! -f "$SYNTAX" || "$SYNTAX" -ot "$0" ]]; then
+    mkdir -p `dirname "$SYNTAX"`
+    (
+    <<'EOF'
+%YAML 1.2
+---
+name: ipseudo
+file_extensions: [ipseudo]
+scope: source.ipseudo
+
+contexts:
+main:
+  - match: \b(?:DEFINE|FOR|TO|to|DO WHILE|OD|CASE|IF|ELSE|FI|ENDFOR|CASE|OF|ESAC|RETURN)\b
+    scope: keyword.operator
+  - match: //.*$
+    scope: comment
+  - match: \b(0[xX][0-9a-fA-F]+|\d+)\b
+    scope: constant.numeric
+  - match: (:=|[- !&=~<>+*?:\[\](){},/]|\bOR\b|\bAND\b|\bXOR\b)
+    scope: keyword.operator
+  - match: '\b[a-zA-Z_][a-zA-Z_0-9]*\b'
+    scope: variable
+EOF
+    ) > "$SYNTAX"
+fi
+
+bat -l c --theme gruvbox-dark --decorations=never --color=always <<EOF
+// $res[$IDXTECH] > $res[$IDXCAT]
+#include <$res[$IDXHEADER]>
+$res[$IDXRET] $res[$IDXNAME]($res[$IDXPARAMS]);
+EOF
+echo "$res[$IDXDESCR]"
+"${0:a:h}/perfs" "$WS" "$res[$IDXPERF]," 2>/dev/null
+bat -l ipseudo --theme gruvbox-dark --decorations=never --color=always <<<"$res[$IDXOP]"
