@@ -22,7 +22,7 @@ SELECT
     i.name,
     i.tech,
     i.cat,
-    i.instr,
+    CASE i.instr WHEN '' THEN '' ELSE '// ' || i.instr END,
     i.descr,
     i.ret,
     i.header,
@@ -65,8 +65,8 @@ fi
 bat -l c --theme gruvbox-dark --decorations=never --color=always <<EOF
 // $res[$IDXTECH] > $res[$IDXCAT]
 #include <$res[$IDXHEADER]>
-$res[$IDXRET] $res[$IDXNAME]($res[$IDXPARAMS]);
+$res[$IDXRET] $res[$IDXNAME]($res[$IDXPARAMS]); $res[$IDXINSTR]
 EOF
 echo "$res[$IDXDESCR]"
-"${0:a:h}/perfs" "$WS" "$res[$IDXPERF]," 2>/dev/null
+"${0:a:h}/perfs" "$WS" "$res[$IDXPERF]," "$2" 2>/dev/null
 bat -l ipseudo --theme gruvbox-dark --decorations=never --color=always <<<"$res[$IDXOP]"

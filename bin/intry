@@ -4,7 +4,7 @@ DATADIR=${XDG_DATA_HOME:-~/.local/share}/intry
 DB="$DATADIR/db"
 DUMP="$DATADIR/dump${1}"
 
-if [[ ! -f "$DUMP" || "$DB" -nt "$DUMP" ]]; then
+if [[ ! -f "$DUMP" || "$DB" -nt "$DUMP" || "${0:A}" -nt "$DUMP" ]]; then
     TECHS=(${(s: :)$(sqlite3 "$DB" "SELECT DISTINCT tech FROM intrin")})
     if [[ "$1" != "" && ${TECHS[(Ie)$1]} -eq 0 ]]; then
         echo "bad TECH - provide one of (or none): $TECHS" >&2
@@ -14,12 +14,11 @@ if [[ ! -f "$DUMP" || "$DB" -nt "$DUMP" ]]; then
         sqlite3 "$DB" <<EOF
 .separator \t
 SELECT
-    i.ret || ' ' || i.name || '(' || COALESCE((SELECT group_concat(p.type || ' ' || p.name, ', ') FROM param p WHERE intrin_id = i.id ORDER BY p.number ASC), '') || ');'
+    i.ret || ' ' || i.name || '(' || COALESCE((SELECT group_concat(p.type || ' ' || p.name, ', ') FROM param p WHERE intrin_id = i.id ORDER BY p.number ASC), '') || '); ' || (CASE i.instr WHEN '' THEN '' ELSE '// ' || i.instr END) || i.instr
 FROM intrin i
-WHERE i.tech=${1:-i.tech}
+WHERE i.tech=${${1+'$1'}:-i.tech}
 EOF
     ) | bat -l c --theme gruvbox-dark --decorations=never --color=always > "$DUMP" || exit 1
 fi
 
-preview="$(dirname "$(realpath "$0")")/preview"
-<"$DUMP" | fzf --ansi --preview-window="50%,wrap" --preview "\"$preview\" \"\$(<<<{} sed -E 's/.+? (\w+)\(.+/\1/')\"" | sed -E 's/.+? (\w+)\(.+/\1/'
+<"$DUMP" | fzf --ansi --preview-window="50%,wrap" --preview "\"${0:A:h}/preview\" \"\$(<<<{} sed -E 's/.+? (\w+)\(.+/\1/')\" \$FZF_PREVIEW_COLUMNS" | sed -E 's/.+? (\w+)\(.+/\1/'
